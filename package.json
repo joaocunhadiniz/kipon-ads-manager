@@ -1,0 +1,32 @@
+{
+  "name": "kipon-ads-manager",
+  "version": "1.0.0",
+  "description": "Google Ads campaign manager for Kipon landing pages",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "generate-refresh-token": "tsx src/utils/generate-refresh-token.ts",
+    "create-campaigns": "tsx src/campaigns/create-campaigns.ts",
+    "list-campaigns": "tsx src/campaigns/list-campaigns.ts"
+  },
+  "keywords": [
+    "google-ads",
+    "campaign-management",
+    "kipon"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "google-ads-api": "^23.0.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
