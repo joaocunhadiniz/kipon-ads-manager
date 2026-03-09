@@ -6,6 +6,7 @@ import OpenAI from 'openai';
 import { supabase } from './supabase-client.js';
 import { log } from './logger.js';
 import { defaultRules, type CampaignMetrics } from './rules.js';
+import { generateDailySummary, generateWeeklySummary } from './summarizer.js';
 import GoogleAdsClient from '../services/google-ads-client.js';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -83,7 +84,7 @@ async function applyRule(rule: typeof defaultRules[0], metrics: CampaignMetrics)
   }
 }
 
-async function aiWeeklyAnalysis(allMetrics: CampaignMetrics[]): Promise<void> {
+async function aiWeeklyAnalysis(allMetrics: CampaignMetrics[]): Promise<string> {
   await log({ action: 'OPTIMIZATION_STARTED', status: 'info', message: 'Iniciando análise semanal com IA' });
 
   const prompt = `Você é um especialista em Google Ads para a Kipon, empresa B2B de consultoria.
@@ -122,6 +123,7 @@ Responda em português com:
   });
 
   console.log('\n📊 Análise Semanal IA:\n', analysis);
+  return analysis;
 }
 
 export async function runOptimizer(weeklyAnalysis = false): Promise<void> {
@@ -141,8 +143,12 @@ export async function runOptimizer(weeklyAnalysis = false): Promise<void> {
     }
   }
 
+  // Resumo diário sempre ao final da otimização
+  await generateDailySummary();
+
   // Análise semanal com IA (apenas aos domingos ou quando solicitado)
   if (weeklyAnalysis) {
-    await aiWeeklyAnalysis(metrics);
+    const analysis = await aiWeeklyAnalysis(metrics);
+    await generateWeeklySummary(analysis);
   }
 }
