@@ -10,7 +10,11 @@
     "start": "node dist/index.js",
     "generate-refresh-token": "tsx src/utils/generate-refresh-token.ts",
     "create-campaigns": "tsx src/campaigns/create-campaigns.ts",
-    "list-campaigns": "tsx src/campaigns/list-campaigns.ts"
+    "list-campaigns": "tsx src/campaigns/list-campaigns.ts",
+    "agent": "tsx src/agent/index.ts",
+    "agent:sync": "tsx src/agent/sync.ts",
+    "agent:optimize": "tsx src/agent/optimizer.ts",
+    "agent:weekly": "tsx src/agent/optimizer.ts --weekly"
   },
   "keywords": [
     "google-ads",
@@ -20,12 +24,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.0",
     "dotenv": "^17.3.1",
     "google-ads-api": "^23.0.0",
+    "node-cron": "^4.2.1",
+    "openai": "^6.27.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
+    "@types/node-cron": "^3.0.11",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
