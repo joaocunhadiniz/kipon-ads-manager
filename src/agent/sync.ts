@@ -10,6 +10,7 @@ import { googleAdsAuthConfig } from '../config/google-ads.config.js';
 
 const CUSTOMER_IDS = ['1851037564', '8888978544']; // kipon + Kipon
 const LOGIN_CUSTOMER_ID = '1536142544'; // Kipon Manager MCC
+const BILLING_CUSTOMER_ID = '1851037564'; // conta onde o crédito foi adicionado
 
 async function syncAccount(customerId: string): Promise<number> {
   const client = new GoogleAdsApi({
@@ -36,6 +37,7 @@ async function syncAccount(customerId: string): Promise<number> {
       metrics.cost_micros,
       metrics.conversions
     FROM campaign
+    WHERE campaign.status != 'REMOVED'
     ORDER BY campaign.id
   `;
 
@@ -81,6 +83,53 @@ async function syncAccount(customerId: string): Promise<number> {
   return updated;
 }
 
+async function syncAccountBalance(): Promise<void> {
+  const client = new GoogleAdsApi({
+    client_id: googleAdsAuthConfig.client_id,
+    client_secret: googleAdsAuthConfig.client_secret,
+    developer_token: googleAdsAuthConfig.developer_token,
+  });
+
+  const customer = client.Customer({
+    customer_id: BILLING_CUSTOMER_ID,
+    refresh_token: googleAdsAuthConfig.refresh_token,
+    login_customer_id: LOGIN_CUSTOMER_ID,
+  });
+
+  try {
+    const rows = await customer.query(`
+      SELECT
+        account_budget.approved_spending_limit_micros,
+        account_budget.amount_served_micros,
+        account_budget.adjusted_spending_limit_micros
+      FROM account_budget
+      WHERE account_budget.status = 'APPROVED'
+    `);
+
+    if (rows.length === 0) return;
+
+    const budget = rows[0].account_budget;
+    const limit = Number(budget?.adjusted_spending_limit_micros ?? budget?.approved_spending_limit_micros ?? 0);
+    const served = Number(budget?.amount_served_micros ?? 0);
+    const remaining = (limit - served) / 1_000_000;
+    const total = limit / 1_000_000;
+
+    await supabase.from('account_config').upsert({
+      key: 'credit_brl',
+      value: String(Math.max(0, remaining)),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'key' });
+
+    await supabase.from('account_config').upsert({
+      key: 'credit_total_brl',
+      value: String(total),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'key' });
+  } catch {
+    // account_budget pode não estar disponível em todas as contas — ignora silenciosamente
+  }
+}
+
 export async function syncCampaigns(): Promise<number> {
   await log({ action: 'SYNC_STARTED', status: 'info', message: 'Iniciando sync de todas as contas' });
 
@@ -105,6 +154,8 @@ export async function syncCampaigns(): Promise<number> {
       }
     }
 
+    await syncAccountBalance();
+
     await supabase.from('sync_log').insert({
       synced_at: new Date().toISOString(),
       status: 'success',
@@ -127,3 +178,8 @@ export async function syncCampaigns(): Promise<number> {
     throw error;
   }
 }
+
+// Permite rodar diretamente: npm run agent:sync
+syncCampaigns()
+  .then(n => console.log(`✅ ${n} campanhas sincronizadas`))
+  .catch(console.error);

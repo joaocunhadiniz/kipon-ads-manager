@@ -55,8 +55,8 @@ export class CampaignCreator {
       console.log(`   - ${adGroupIds.length} Ad Groups`);
 
       return { campaignId, budgetId, adGroupIds };
-    } catch (error) {
-      console.error(`❌ Erro ao criar campanha "${config.campaign.name}":`, error);
+    } catch (error: any) {
+      console.error(`❌ Erro ao criar campanha "${config.campaign.name}":`, JSON.stringify(error, null, 2));
       throw error;
     }
   }
@@ -66,7 +66,7 @@ export class CampaignCreator {
    */
   private async createBudget(name: string, budgetConfig: any): Promise<string> {
     const budget = {
-      name: `Budget - ${name}`,
+      name: `Budget - ${name} - ${Date.now()}`,
       amount_micros: budgetConfig.amountMicros,
       delivery_method: budgetConfig.deliveryMethod,
     };
@@ -79,34 +79,40 @@ export class CampaignCreator {
    * Cria uma Campaign
    */
   private async createCampaignResource(campaignConfig: any, budgetResourceName: string): Promise<string> {
-    const campaign = {
+    const ns = campaignConfig.networkSettings;
+    const campaign: any = {
       name: campaignConfig.name,
       status: campaignConfig.status || 'PAUSED',
       advertising_channel_type: campaignConfig.advertisingChannelType,
       campaign_budget: budgetResourceName,
-      network_settings: campaignConfig.networkSettings || {
-        target_google_search: true,
-        target_search_network: true,
-        target_content_network: false,
-        target_partner_search_network: false,
+      contains_eu_political_advertising: 'DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING',
+      network_settings: {
+        target_google_search: ns?.targetGoogleSearch ?? true,
+        target_search_network: ns?.targetSearchNetwork ?? false,
+        target_content_network: ns?.targetContentNetwork ?? false,
+        target_partner_search_network: ns?.targetPartnerSearchNetwork ?? false,
       },
-      start_date: campaignConfig.startDate,
-      end_date: campaignConfig.endDate,
     };
+
+    if (campaignConfig.startDate) campaign.start_date = campaignConfig.startDate;
+    if (campaignConfig.endDate) campaign.end_date = campaignConfig.endDate;
 
     // Adicionar bidding strategy
     if (campaignConfig.biddingStrategy.type === 'MAXIMIZE_CONVERSIONS') {
-      (campaign as any).maximize_conversions = {};
+      campaign.maximize_conversions = {};
+    } else if (campaignConfig.biddingStrategy.type === 'MAXIMIZE_CLICKS') {
+      campaign.target_spend = {}; // MAXIMIZE_CLICKS = target_spend no protobuf da Google Ads API
     } else if (campaignConfig.biddingStrategy.type === 'TARGET_CPA') {
-      (campaign as any).target_cpa = {
+      campaign.target_cpa = {
         target_cpa_micros: campaignConfig.biddingStrategy.targetCpaMicros,
       };
     } else if (campaignConfig.biddingStrategy.type === 'MANUAL_CPC') {
-      (campaign as any).manual_cpc = {
+      campaign.manual_cpc = {
         enhanced_cpc_enabled: true,
       };
     }
 
+    console.log('  [DEBUG] Campaign payload:', JSON.stringify(campaign, null, 2));
     const response = await this.customer.campaigns.create([campaign]);
     return response.results[0].resource_name;
   }
