@@ -180,6 +180,9 @@ export async function syncCampaigns(): Promise<number> {
 }
 
 // Permite rodar diretamente: npm run agent:sync
-syncCampaigns()
-  .then(n => console.log(`✅ ${n} campanhas sincronizadas`))
-  .catch(console.error);
+const isDirectRun = process.argv[1]?.endsWith('sync.ts') || process.argv[1]?.endsWith('sync.js');
+if (isDirectRun) {
+  syncCampaigns()
+    .then(n => console.log(`✅ ${n} campanhas sincronizadas`))
+    .catch(console.error);
+}
