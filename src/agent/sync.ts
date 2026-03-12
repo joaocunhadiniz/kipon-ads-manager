@@ -51,18 +51,20 @@ async function syncAccount(customerId: string): Promise<number> {
 
     if (!c?.id) continue;
 
-    await supabase.from('campaigns').upsert({
+    const { data: upserted } = await supabase.from('campaigns').upsert({
       google_ads_campaign_id: String(c.id),
       google_ads_customer_id: customerId,
       name: c.name,
       status: c.status === 2 ? 'ENABLED' : 'PAUSED',
       budget_daily_brl: b?.amount_micros ? Number(b.amount_micros) / 1_000_000 : 0,
       channel_type: 'SEARCH',
-    }, { onConflict: 'google_ads_campaign_id' });
+    }, { onConflict: 'google_ads_campaign_id' }).select('id').single();
 
-    if (m) {
-      await supabase.from('campaign_metrics').upsert({
-        campaign_id: String(c.id),
+    const campaignUuid = upserted?.id;
+
+    if (m && campaignUuid) {
+      const { error: metricsError } = await supabase.from('campaign_metrics').upsert({
+        campaign_id: campaignUuid,
         date: new Date().toISOString().split('T')[0],
         impressions: Number(m.impressions ?? 0),
         clicks: Number(m.clicks ?? 0),
@@ -75,6 +77,7 @@ async function syncAccount(customerId: string): Promise<number> {
           ? (Number(m.cost_micros ?? 0) / 1_000_000) / Number(m.clicks ?? 0)
           : 0,
       }, { onConflict: 'campaign_id,date' });
+      if (metricsError) console.error(`Erro ao salvar métricas para ${c.name}:`, metricsError.message);
     }
 
     updated++;
