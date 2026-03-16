@@ -152,3 +152,12 @@ export async function runOptimizer(weeklyAnalysis = false): Promise<void> {
     await generateWeeklySummary(analysis);
   }
 }
+
+// Permite rodar diretamente: npm run agent:optimize
+const isDirectRun = process.argv[1]?.endsWith('optimizer.ts') || process.argv[1]?.endsWith('optimizer.js');
+if (isDirectRun) {
+  const weekly = process.argv.includes('--weekly');
+  runOptimizer(weekly)
+    .then(() => console.log('✅ Otimização concluída'))
+    .catch(console.error);
+}
