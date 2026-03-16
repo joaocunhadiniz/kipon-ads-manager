@@ -25,6 +25,7 @@ async function syncAccount(customerId: string): Promise<number> {
     login_customer_id: LOGIN_CUSTOMER_ID,
   });
 
+  const today = new Date().toISOString().split('T')[0].replace(/-/g, '-');
   const query = `
     SELECT
       campaign.id,
@@ -38,6 +39,7 @@ async function syncAccount(customerId: string): Promise<number> {
       metrics.conversions
     FROM campaign
     WHERE campaign.status != 'REMOVED'
+      AND segments.date = '${today}'
     ORDER BY campaign.id
   `;
 
