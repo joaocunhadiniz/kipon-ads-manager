@@ -6,7 +6,7 @@
 
 import GoogleAdsClient from '../services/google-ads-client.js';
 import CampaignCreator from '../services/campaign-creator.js';
-import kiponCampaigns from './kipon-campaigns.config.js';
+import assemblyCampaigns from './assembly-campaigns.config.js';
 
 async function main() {
   console.log('🚀 Kipon Ads Manager - Criação de Campanhas\n');
@@ -28,67 +28,42 @@ async function main() {
 
     console.log('\n═══════════════════════════════════════════════════\n');
 
-    // 3. Verificar se campanhas já existem
+    // 3. Verificar se campanha já existe
     console.log('🔍 Verificando campanhas existentes...\n');
-    const campaign1Exists = await adsClient.getCampaignByName(kiponCampaigns.campaign1.campaign.name);
-    const campaign2Exists = await adsClient.getCampaignByName(kiponCampaigns.campaign2.campaign.name);
+    const campaign1Exists = await adsClient.getCampaignByName(assemblyCampaigns.campaign1.campaign.name);
 
-    if (campaign1Exists || campaign2Exists) {
-      console.log('⚠️  ATENÇÃO: Campanhas já existem!\n');
-      if (campaign1Exists) {
-        console.log(`   - "${kiponCampaigns.campaign1.campaign.name}" já existe`);
-      }
-      if (campaign2Exists) {
-        console.log(`   - "${kiponCampaigns.campaign2.campaign.name}" já existe`);
-      }
+    if (campaign1Exists) {
+      console.log('⚠️  ATENÇÃO: Campanha já existe!\n');
+      console.log(`   - "${assemblyCampaigns.campaign1.campaign.name}" já existe`);
       console.log('\n❌ Cancelando criação para evitar duplicatas.');
-      console.log('💡 Dica: Delete as campanhas existentes ou altere os nomes na configuração.\n');
+      console.log('💡 Dica: Delete a campanha existente ou altere o nome na configuração.\n');
       process.exit(1);
     }
 
     console.log('✅ Nenhuma campanha existente encontrada. Prosseguindo...\n');
     console.log('═══════════════════════════════════════════════════\n');
 
-    // 4. Criar campanhas
+    // 4. Criar campanha
     const creator = new CampaignCreator(customer);
 
-    // Campanha 1: Mapeamento de Skills
-    console.log('📊 CAMPANHA 1: MAPEAMENTO DE SKILLS');
+    console.log('📊 CAMPANHA: ASSEMBLY - AGENTE DE VOZ PARA TIMES');
     console.log('───────────────────────────────────────────────────');
-    const result1 = await creator.createCampaign(kiponCampaigns.campaign1);
+    const result1 = await creator.createCampaign(assemblyCampaigns.campaign1);
 
-    // Adicionar negative keywords
-    await creator.addNegativeKeywords(result1.campaignId, kiponCampaigns.negativeKeywords);
-
-    console.log('\n═══════════════════════════════════════════════════\n');
-
-    // Campanha 2: Humanos + IA
-    console.log('📊 CAMPANHA 2: HUMANOS + AGENTES IA');
-    console.log('───────────────────────────────────────────────────');
-    const result2 = await creator.createCampaign(kiponCampaigns.campaign2);
-
-    // Adicionar negative keywords
-    await creator.addNegativeKeywords(result2.campaignId, kiponCampaigns.negativeKeywords);
+    await creator.addNegativeKeywords(result1.campaignId, assemblyCampaigns.negativeKeywords);
 
     console.log('\n═══════════════════════════════════════════════════\n');
 
     // 5. Resumo final
-    console.log('✅ CAMPANHAS CRIADAS COM SUCESSO!\n');
+    console.log('✅ CAMPANHA CRIADA COM SUCESSO!\n');
     console.log('📋 RESUMO:');
     console.log('───────────────────────────────────────────────────');
-    console.log(`\n🎯 Campanha 1: ${kiponCampaigns.campaign1.campaign.name}`);
+    console.log(`\n🎯 Campanha: ${assemblyCampaigns.campaign1.campaign.name}`);
     console.log(`   ID: ${result1.campaignId}`);
-    console.log(`   Orçamento: R$ 20/dia`);
+    console.log(`   Orçamento: R$ 5/dia`);
     console.log(`   Ad Groups: ${result1.adGroupIds.length}`);
     console.log(`   Status: PAUSADA (ativar após revisão)`);
-    console.log(`   Landing Page: ${kiponCampaigns.campaign1.landingPageUrl}`);
-
-    console.log(`\n🎯 Campanha 2: ${kiponCampaigns.campaign2.campaign.name}`);
-    console.log(`   ID: ${result2.campaignId}`);
-    console.log(`   Orçamento: R$ 20/dia`);
-    console.log(`   Ad Groups: ${result2.adGroupIds.length}`);
-    console.log(`   Status: PAUSADA (ativar após revisão)`);
-    console.log(`   Landing Page: ${kiponCampaigns.campaign2.landingPageUrl}`);
+    console.log(`   Landing Page: ${assemblyCampaigns.campaign1.landingPageUrl}`);
 
     console.log('\n═══════════════════════════════════════════════════\n');
 
